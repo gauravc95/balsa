@@ -1,7 +1,6 @@
 
 var axon=require("axon")
 var sock = axon.socket('req');
-var index=require("./index.js")
 
 var Timer = require('tiny-timer')
 
@@ -15,12 +14,12 @@ var con = mysql.createConnection({
 });
 const {exec} = require('child_process');
 
-console.log("node communication on",process.argv[2])
+console.log("node communication on------>>",process.argv[2])
 var port=parseInt (process.argv[2]);
 sock.bind(port)
-
+console.log("Sending the transaaction to----->",process.argv[2])
 sock.send("election","Hello From Node 1, Please vote for me!!", function(res,err){
-
+if (err) throw err
     console.log("Responce form",port,res)
 
     if(res==null)
@@ -28,13 +27,12 @@ sock.send("election","Hello From Node 1, Please vote for me!!", function(res,err
         res=0;
     }
     
-
     console.log("node communication closed on",process.argv[2])
     
     con.connect(function(err) {
         if (err) throw err;
         console.log("Connected!");
-        var sql="insert into nodeInfo.new_table (votes,voter) values("+res+","+port+")"+";"
+        var sql="insert into nodeInfo.electionTable (votes,voter) values("+res+","+port+")"+";"
 
         console.log(sql)
         con.query(sql, function (err, result) {

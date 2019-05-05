@@ -1,4 +1,6 @@
-var axon=require("axon")
+
+
+//var axon=require('axon')
 var raxon=require("axon-rpc")
 var Timer = require('tiny-timer')
 const kill = require('kill-port')
@@ -9,26 +11,61 @@ var mysql = require('mysql');
 
 var con = mysql.createConnection({
     host: "localhost",
-    user: "gaurav",
+    user: "gaurav1",
     password: "123"
 });
 
-var axon = require('axon');
-//var sock = axon.socket('req');
-var sock1 = axon.socket('req');
+
 
 let termTimer = new Timer()
 let tp = new Timer()
+var nodePort=8801;
+var leaderNow;
 
 
-console.log("Node 1")
+var axon = require('axon');
+var sock = axon.socket('rep');
+ 
+sock.connect(8801);
+console.log("NOde2 Here 8801")
+ 
+sock.on('message', function(task,msg, reply){
+    // resize the image
+    console.log("Request-",msg)
+  
+    switch(task)
+    {
+      case "election":
+      var rar=generateRandomNumber(2)
+      console.log("My responce-->",rar)     
+      reply(rar);
+  
+      break;
 
+      case "Result":
 
-var nodes=[8801,9901]
+      if(leaderNow!=0){
+        console.log("My responce-->","I have a leader")     
+        reply("I have a leader");
+      }
+      else{
+        console.log("My responce-->","You are My leader")     
+        reply("You are My leader");
+      }
+      break;
+    }
+  
+  });
+
+function generateRandomNumber(max)
+{
+    return Math.floor(Math.random() * Math.floor(max));
+}
+
+var nodes=[7701,9901]
 var terms=[]
 termTimer.start(generateRandomNumber(50000))
 termTimer.on('tick', (ms) => console.log('Duration', ms))
-//sock.bind(8000)
 
 
 termTimer.on('statusChanged',function(status){
@@ -41,7 +78,7 @@ termTimer.on('statusChanged',function(status){
           
             con.connect(function(err) {
                 console.log("Connected!");
-                var sql="DELETE FROM nodeInfo.new_table"
+                var sql="DELETE FROM nodeInfo1.electionTable"
         
                 console.log(sql)
                 con.query(sql, function (err, result) {
@@ -55,31 +92,10 @@ termTimer.on('statusChanged',function(status){
     }
 });
 
-sock.connect(9000);
 
-sock.on('message', function(task,msg, reply){
-    // resize the image
-    console.log("Request-",msg)
-  
-    switch(task)
-    {
-      case "election":
-      var rar=generateRandomNumber(2)
-      console.log(rar)     
-      reply(rar);
-  
-      break;
-    }
-  
-  });
 
-//heartbeat(9002)
 
-//heartbeat(9001)
-function generateRandomNumber(max)
-{
-    return Math.floor(Math.random() * Math.floor(max));
-}
+
 
 async function sleep(ms){
     return new Promise(resolve=>{
@@ -100,7 +116,7 @@ async function leaderElection()
     
         sleep(3000).then(function(res){
 
-            var sql="SELECT votes FROM nodeInfo.new_table;"
+            var sql="SELECT votes FROM nodeInfo1.electionTable;"
             var cnt=0;
             console.log(sql)
             con.query(sql, function (err, result) {
@@ -118,8 +134,8 @@ async function leaderElection()
                 if(cnt>=nodes.length/2)
                 {
                     console.log("***********************************************I am the Leader***********************************************")
-                    nodes.forEach(function(node){ announce("Leader Here",node)})
-                    nodes.forEach(function(node){ heartbeat(node)})                    
+                    //nodes.forEach(function(node){ announce("Leader Here",node)})
+                    //nodes.forEach(function(node){ heartbeat(node)})                    
                 }        
                 resolve(true);    
             });
@@ -131,7 +147,7 @@ function askForVotes(node)
 {
     console.log("**************askForVotes************")
     console.log("askForVotes",node)
-    const resp=child_process.fork("comm.js",[node])
+    const resp=child_process.fork("./comm2.js",[node])
 
 }
 function heartbeat(port)
@@ -172,7 +188,7 @@ function announce(message,port)
     sock.send(message, function(res,err){
 
         console.log("Responce-",res)
-        timer.start(2500)
+        //timer.start(2500)
         
     });   
          

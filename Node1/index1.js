@@ -1,4 +1,6 @@
-var axon=require("axon")
+
+
+//var axon=require('axon')
 var raxon=require("axon-rpc")
 var Timer = require('tiny-timer')
 const kill = require('kill-port')
@@ -13,22 +15,45 @@ var con = mysql.createConnection({
     password: "123"
 });
 
-var axon = require('axon');
-//var sock = axon.socket('req');
-var sock1 = axon.socket('req');
+
 
 let termTimer = new Timer()
 let tp = new Timer()
+var nodePort=7701;
+var term=[]
 
+var axon = require('axon');
+var sock = axon.socket('rep');
+ 
+sock.connect(7701);
+console.log("Node1 Here 7701")
+ 
+sock.on('message', function(task,msg, reply){
+    // resize the image
+    console.log("Request-",msg)
+  
+    switch(task)
+    {
+      case "election":
+      var rar=generateRandomNumber(2)
+      console.log("My responce-->",rar)     
+      reply(rar);
+  
+      break;
+    }
+  
+  });
 
-console.log("Node 1")
-
+function generateRandomNumber(max)
+{
+    return Math.floor(Math.random() * Math.floor(max));
+}
 
 var nodes=[8801,9901]
 var terms=[]
-termTimer.start(generateRandomNumber(50000))
+//generateRandomNumber(50000)
+termTimer.start(5000)
 termTimer.on('tick', (ms) => console.log('Duration', ms))
-//sock.bind(8000)
 
 
 termTimer.on('statusChanged',function(status){
@@ -41,12 +66,21 @@ termTimer.on('statusChanged',function(status){
           
             con.connect(function(err) {
                 console.log("Connected!");
-                var sql="DELETE FROM nodeInfo.new_table"
+                var sql="DELETE FROM nodeInfo.electionTable"
         
                 console.log(sql)
                 con.query(sql, function (err, result) {
                     if (err) throw err;
-                    console.log("All record deleted");
+                    console.log("All record deleted electionTable");
+        
+                });
+
+                var sql="DELETE FROM nodeInfo.followerTable"
+        
+                console.log(sql)
+                con.query(sql, function (err, result) {
+                    if (err) throw err;
+                    console.log("All record deleted followerTable");
         
                 });
             });
@@ -55,31 +89,10 @@ termTimer.on('statusChanged',function(status){
     }
 });
 
-sock.connect(9000);
 
-sock.on('message', function(task,msg, reply){
-    // resize the image
-    console.log("Request-",msg)
-  
-    switch(task)
-    {
-      case "election":
-      var rar=generateRandomNumber(2)
-      console.log(rar)     
-      reply(rar);
-  
-      break;
-    }
-  
-  });
 
-//heartbeat(9002)
 
-//heartbeat(9001)
-function generateRandomNumber(max)
-{
-    return Math.floor(Math.random() * Math.floor(max));
-}
+
 
 async function sleep(ms){
     return new Promise(resolve=>{
@@ -100,7 +113,7 @@ async function leaderElection()
     
         sleep(3000).then(function(res){
 
-            var sql="SELECT votes FROM nodeInfo.new_table;"
+            var sql="SELECT votes FROM nodeInfo.electionTable;"
             var cnt=0;
             console.log(sql)
             con.query(sql, function (err, result) {
@@ -118,8 +131,35 @@ async function leaderElection()
                 if(cnt>=nodes.length/2)
                 {
                     console.log("***********************************************I am the Leader***********************************************")
-                    nodes.forEach(function(node){ announce("Leader Here",node)})
-                    nodes.forEach(function(node){ heartbeat(node)})                    
+                    nodes.forEach(function(node){ announce("I am the Leader!",node)})
+
+
+                    sleep(4000).then(function(res){
+
+                    //--------------------------------------------
+                    var sql="SELECT value FROM nodeInfo.followerTable;"
+            var cntFollower=0;
+            console.log(sql)
+            con.query(sql, function (err, result) {
+                if (err) throw err;
+                console.log("result",result);
+                
+                for(var i=0;i<result.length;i++)
+                {
+                    if(result[i].value==1)
+                    {
+                        cntFollower++;
+                    }
+                }
+                console.log("count of yes votes",cnt)
+                if(cnt>=nodes.length/2)
+                {
+                    console.log("******************************heartbeatheartbeatheartbeatheartbeat*****************************************")
+                    //nodes.forEach(function(node){ heartbeat(node)})                    
+          
+                }        
+                });  
+            });            
                 }        
                 resolve(true);    
             });
@@ -131,8 +171,17 @@ function askForVotes(node)
 {
     console.log("**************askForVotes************")
     console.log("askForVotes",node)
-    const resp=child_process.fork("comm.js",[node])
+    const resp=child_process.fork("./comm1.js",[node])
 
+}
+
+function announce(message,port)
+{
+
+    console.log("**************announcingToTheConsortium************")
+    console.log("announceTo",port)
+    const resp=child_process.fork("./announce.js",[port,message])
+            
 }
 function heartbeat(port)
 {
@@ -144,14 +193,14 @@ function heartbeat(port)
     timer.on('done', () => console.log('done!'))
     //timer.on('statusChanged', (status) => console.log('status:', status))    
     
-    timer.start(2500)
+    timer.start(50000)
     // (status) => console.log('status:', status))
     
     timer.on('statusChanged',function(status){
         console.log(status)
         if(status=="stopped")
         {
-            sock.send("Hello From Server", function(res,err){
+            sock.send("Hello From Leader! HeartBeat", function(res,err){
     
                 console.log("Responce-",res)
                 timer.start(2500)
@@ -162,18 +211,4 @@ function heartbeat(port)
 }
 
 
-function announce(message,port)
-{
-    var sock = axon.socket('req');
-    sock.bind(port);
-   
-    console.log(status)
 
-    sock.send(message, function(res,err){
-
-        console.log("Responce-",res)
-        timer.start(2500)
-        
-    });   
-         
-}
