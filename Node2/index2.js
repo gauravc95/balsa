@@ -53,6 +53,17 @@ sock.on('message', function(task,msg, reply){
         reply("You are My leader");
       }
       break;
+      case "HB":
+
+      if(leaderNow!=0){
+        console.log("My responce-->","I have a leader")     
+        reply(rar);
+      }
+      else{
+        console.log("My responce-->","You are My leader")     
+        reply(rar);
+      }
+      break;
     }
   
   });
