@@ -6,7 +6,7 @@ var sock = axon.socket('req');
 var Timer = require('tiny-timer')
 let timer = new Timer()
 var mysql = require('mysql');
-var index=require("./index1")
+var index=require("./index2")
 
 var con = mysql.createConnection({
   host: "localhost",
@@ -49,10 +49,10 @@ timer.on('statusChanged',function(status){
 });
 
 sock.on('error', function err(err) {
-    console.error('failed to write to: ', err);
+    console.error('errorerrorerrorerrorerrorerrorerrorfailed to write to: ', err);
     console.log("Error while sending socket--announce",err)           
-    process.abort();
-    
+ process.abort();
+
     });
 
 

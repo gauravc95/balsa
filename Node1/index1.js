@@ -22,7 +22,9 @@ let tp = new Timer()
 let tp1 = new Timer()
 
 var nodePort=7701;
-var term=[]
+var terms=[]
+var leaderNowPort;
+
 
 var axon = require('axon');
 var sock = axon.socket('rep');
@@ -37,10 +39,34 @@ sock.on('message', function(task,msg, reply){
     switch(task)
     {
       case "election":
-      var rar=generateRandomNumber(2)
-      console.log("My responce-->",rar)     
-      reply(rar);
-  
+        var rar=generateRandomNumber(2)
+        console.log("My responce-->",rar)     
+        reply(rar);
+      break;
+
+      case "Result":
+
+      if(leaderNowPort!=null){
+        console.log("My responce-->","I have a leader")     
+        reply("I have a leader");
+      }
+      else{
+        leaderNowPort=port
+        terms.push(port)
+        console.log("My responce-->","You are My leader")     
+        reply("You are My leader");
+      }
+      break;
+      case "HB":
+
+      if(leaderNowPort!=null){
+        console.log("My responce-->","I have a leader")     
+        reply(rar);
+      }
+      else{
+        console.log("My responce-->","You are My leader")     
+        reply(rar);
+      }
       break;
     }
   
@@ -52,7 +78,6 @@ function generateRandomNumber(max)
 }
 
 var nodes=[8801,9901]
-var terms=[]
 //generateRandomNumber(50000)
 termTimer.start(5000)
 termTimer.on('tick', (ms) => console.log('Duration', ms))
@@ -157,8 +182,10 @@ async function leaderElection()
                 {
                     console.log("******************************heartbeatheartbeatheartbeatheartbeat*****************************************")
                     nodes.forEach(function(node){ heartbeat(node)}) 
-                    setTimeout(function2, 130000000);
-                         
+                   
+                   
+                    setTimeout(function2, 125000);
+
                 }        
                 });  
             });            
@@ -171,6 +198,8 @@ async function leaderElection()
 
 function function2(node)
 {
+    console.log("Passed the settimout")    
+
     console.log("!!!!!!!!!!!!!!!!!!!!!! term finished")
 
 }
@@ -188,7 +217,7 @@ function askForVotes(node)
 {
     console.log("**************askForVotes************")
     console.log("askForVotes",node)
-    const resp=child_process.fork("./comm1.js",[node])
+    const resp=child_process.fork("./askForVotes.js",[node])
 }
 
 function announce(message,port)
@@ -201,3 +230,4 @@ function announce(message,port)
 
 
 
+exports.nodePort=nodePort

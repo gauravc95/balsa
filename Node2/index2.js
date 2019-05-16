@@ -15,12 +15,13 @@ var con = mysql.createConnection({
     password: "123"
 });
 
+var terms=[]
 
 
 let termTimer = new Timer()
 let tp = new Timer()
 var nodePort=8801;
-var leaderNow;
+var leaderNowPort;
 
 
 var axon = require('axon');
@@ -29,33 +30,34 @@ var sock = axon.socket('rep');
 sock.connect(8801);
 console.log("NOde2 Here 8801")
  
-sock.on('message', function(task,msg, reply){
+sock.on('message', function(task,msg,port, reply){
     // resize the image
     console.log("Request-",msg)
   
     switch(task)
     {
       case "election":
-      var rar=generateRandomNumber(2)
-      console.log("My responce-->",rar)     
-      reply(rar);
-  
+        var rar=generateRandomNumber(2)
+        console.log("My responce-->",rar)     
+        reply(rar);
       break;
 
       case "Result":
 
-      if(leaderNow!=0){
+      if(leaderNowPort!=null){
         console.log("My responce-->","I have a leader")     
         reply("I have a leader");
       }
       else{
+        leaderNowPort=port
+        terms.push(port)
         console.log("My responce-->","You are My leader")     
         reply("You are My leader");
       }
       break;
       case "HB":
 
-      if(leaderNow!=0){
+      if(leaderNowPort!=null){
         console.log("My responce-->","I have a leader")     
         reply(rar);
       }
@@ -74,7 +76,6 @@ function generateRandomNumber(max)
 }
 
 var nodes=[7701,9901]
-var terms=[]
 termTimer.start(generateRandomNumber(50000))
 termTimer.on('tick', (ms) => console.log('Duration', ms))
 
@@ -94,13 +95,22 @@ termTimer.on('statusChanged',function(status){
                 console.log(sql)
                 con.query(sql, function (err, result) {
                     if (err) throw err;
-                    console.log("All record deleted");
+                    console.log("All record deleted electionTable 1");        
+                });
+
+                var sql="DELETE FROM nodeInfo1.followerTable"
+        
+                console.log(sql)
+                con.query(sql, function (err, result) {
+                    if (err) throw err;
+                    console.log("All record deleted followerTable 1");
         
                 });
             });
            termTimer.start(generateRandomNumber(50000))
         });
     }
+
 });
 
 
@@ -145,8 +155,39 @@ async function leaderElection()
                 if(cnt>=nodes.length/2)
                 {
                     console.log("***********************************************I am the Leader***********************************************")
-                    //nodes.forEach(function(node){ announce("Leader Here",node)})
-                    //nodes.forEach(function(node){ heartbeat(node)})                    
+                    nodes.forEach(function(node){ announce("I am the Leader!",node)})
+
+
+                    sleep(4000).then(function(res){
+
+                    //--------------------------------------------
+                    var sql="SELECT value FROM nodeInfo1.followerTable;"
+            var cntFollower=0;
+            console.log(sql)
+            con.query(sql, function (err, result) {
+                if (err) throw err;
+                console.log("result",result);
+                
+                for(var i=0;i<result.length;i++)
+                {
+                    if(result[i].value==1)
+                    {
+                        cntFollower++;
+                    }
+                }
+
+                console.log("count of yes votes",cnt)
+                if(cnt>=nodes.length/2)
+                {
+                    console.log("******************************heartbeatheartbeatheartbeatheartbeat*****************************************")
+                    nodes.forEach(function(node){ heartbeat(node)}) 
+                   
+                   
+                    setTimeout(function2, 125000);
+
+                }        
+                });  
+            });            
                 }        
                 resolve(true);    
             });
@@ -154,53 +195,33 @@ async function leaderElection()
     })
 }
 
-function askForVotes(node)
+function function2(node)
 {
-    console.log("**************askForVotes************")
-    console.log("askForVotes",node)
-    const resp=child_process.fork("./comm2.js",[node])
+    console.log("Passed the settimout")    
+
+    console.log("!!!!!!!!!!!!!!!!!!!!!! term finished")
 
 }
 function heartbeat(port)
 {
-    let timer = new Timer()
-    var sock = axon.socket('req');
-    sock.bind(port);
+    console.log("**************heartbeat************")
+    console.log("heartbeat starts with*************",port)
+    const resp=child_process.fork("./heartBeat.js",[port])
 
-    timer.on('tick', (ms) => console.log('Duration', ms))
-    timer.on('done', () => console.log('done!'))
-    //timer.on('statusChanged', (status) => console.log('status:', status))    
-    
-    timer.start(2500)
-    // (status) => console.log('status:', status))
-    
-    timer.on('statusChanged',function(status){
-        console.log(status)
-        if(status=="stopped")
-        {
-            sock.send("Hello From Server", function(res,err){
-    
-                console.log("Responce-",res)
-                timer.start(2500)
-             
-            });   
-        }    
-    });
 }
-
+function askForVotes(node)
+{
+    console.log("**************askForVotes************")
+    console.log("askForVotes",node)
+    const resp=child_process.fork("./askForVotes.js",[node])
+}
 
 function announce(message,port)
 {
-    var sock = axon.socket('req');
-    sock.bind(port);
+    console.log("**************announcingToTheConsortium************")
+    console.log("announceTo",port)
+    const resp=child_process.fork("./announce.js",[port,message])            
    
-    console.log(status)
-
-    sock.send(message, function(res,err){
-
-        console.log("Responce-",res)
-        //timer.start(2500)
-        
-    });   
          
 }
+exports.nodePort=nodePort

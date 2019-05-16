@@ -18,38 +18,42 @@ const {exec} = require('child_process');
 console.log("node communication on------>>",process.argv[2])
 var port=parseInt (process.argv[2]);
 sock.bind(port)
-console.log("Sending the transaction to----->",process.argv[2])
+console.log("Sending the transaaction to----->",process.argv[2])
+sock.send("election","Hello From Node 1, Please vote for me!!",index.nodePort, function(res,err){
+    if (err) { 
+        console.log("Error while sending socket--announce",err)           
+        process.abort();
+   }
+       console.log("Responce form",port,res)
 
-sock.send("Result",process.argv[3],index.nodePort, function(res,err){
-if (err) { console.log("Error while sending socket--announce",err)           
- process.abort();
-}
-    console.log("Responce form",port,res)
-    if(res=="You are My leader")
+    if(res==null)
     {
-        res=1;
-    }
-    else{
         res=0;
     }
+    
+    console.log("node communication closed on",process.argv[2])
     
     con.connect(function(err) {
         if (err) throw err;
         console.log("Connected!");
-        var sql="insert into nodeInfo.followerTable (value,node) values("+res+","+port+")"+";"
+        var sql="insert into nodeInfo.electionTable (votes,voter) values("+res+","+port+")"+";"
 
         console.log(sql)
         con.query(sql, function (err, result) {
             if (err) throw err;
             console.log("1 record inserted");
-            console.log("node communication closed on",process.argv[2])
             process.abort();
-        });
-    })       
+
+          });
+
+
+      });
+
+   
 });
 
 sock.on('error', function err(err) {
-    console.error('failed to write to: ', err);
+    console.error('errorerrorfailed to write to: ', err);
     });
 
 

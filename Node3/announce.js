@@ -1,7 +1,7 @@
 
 var axon=require("axon")
 var sock = axon.socket('req');
-var index=require("./index1")
+var index=require("./index3")
 
 var Timer = require('tiny-timer')
 
@@ -21,9 +21,7 @@ sock.bind(port)
 console.log("Sending the transaction to----->",process.argv[2])
 
 sock.send("Result",process.argv[3],index.nodePort, function(res,err){
-if (err) { console.log("Error while sending socket--announce",err)           
- process.abort();
-}
+if (err) { console.log("Error while sending socket--announce",err)}
     console.log("Responce form",port,res)
     if(res=="You are My leader")
     {
@@ -34,9 +32,10 @@ if (err) { console.log("Error while sending socket--announce",err)
     }
     
     con.connect(function(err) {
-        if (err) throw err;
-        console.log("Connected!");
-        var sql="insert into nodeInfo.followerTable (value,node) values("+res+","+port+")"+";"
+        if (err) { console.log("Error while sending socket--announce",err)           
+        process.abort();
+       }        console.log("Connected!");
+        var sql="insert into nodeInfo2.followerTable (value,node) values("+res+","+port+")"+";"
 
         console.log(sql)
         con.query(sql, function (err, result) {

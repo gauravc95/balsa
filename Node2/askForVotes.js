@@ -1,7 +1,7 @@
 
 var axon=require("axon")
 var sock = axon.socket('req');
-
+var index=require("./index2")
 var Timer = require('tiny-timer')
 
 let tp = new Timer()
@@ -18,8 +18,12 @@ console.log("node communication on----->",process.argv[2])
 var port=parseInt (process.argv[2]);
 sock.bind(port)
 console.log("Sending the transaaction to----->",process.argv[2])
-sock.send("election","Hello From Node 2, Please vote for me!!", function(res,err){
+sock.send("election","Hello From Node 2, Please vote for me!!",index.nodePort, function(res,err){
 
+    if (err) { 
+        console.log("Error while sending socket--announce",err)           
+        process.abort();
+   }
     console.log("Responce form",port,res)
 
     if(res==null)
@@ -31,8 +35,10 @@ sock.send("election","Hello From Node 2, Please vote for me!!", function(res,err
     console.log("node communication closed on",process.argv[2])
     
     con.connect(function(err) {
-        if (err) throw err;
-        console.log("Connected!");
+        if (err) { console.log("Error while sending socket--announce",err)           
+        process.abort();
+       }
+               console.log("Connected!");
         var sql="insert into nodeInfo1.electionTable (votes,voter) values("+res+","+port+")"+";"
 
         console.log(sql)
